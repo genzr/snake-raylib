@@ -41,6 +41,7 @@ static void init() {
     SnakeCell* head = (SnakeCell*)malloc(sizeof(SnakeCell));
     head->cell_x = WIDTH_IN_CELLS / 2;
     head->cell_y = HEIGHT_IN_CELLS / 2;
+    head->head = NULL;
     head->tail = NULL;
 
     snake = (Snake*)malloc(sizeof(Snake));
@@ -63,13 +64,13 @@ static void init() {
 }
 
 static void HandleInput() {
-    if(IsKeyPressed(KEY_UP)) {
+    if(IsKeyPressed(KEY_UP) && snake->forwardDirection.y != 1) {
         snake->forwardDirection = (Vector2){0, -1};
-    } else if(IsKeyPressed(KEY_DOWN)) {
+    } else if(IsKeyPressed(KEY_DOWN) && snake->forwardDirection.y != -1) {
         snake->forwardDirection = (Vector2){0, 1};
-    } else if(IsKeyPressed(KEY_LEFT)) {
+    } else if(IsKeyPressed(KEY_LEFT) && snake->forwardDirection.x != 1) {
         snake->forwardDirection = (Vector2){-1, 0};
-    } else if(IsKeyPressed(KEY_RIGHT)) {
+    } else if(IsKeyPressed(KEY_RIGHT) && snake->forwardDirection.x != -1) {
         snake->forwardDirection = (Vector2){1, 0};
     }
 }
@@ -77,8 +78,9 @@ static void HandleInput() {
 static void Update() {
     // Update the snake's position
     SnakeCell* current = snake->head;
+    uint32_t prev_x = current->cell_x;
+    uint32_t prev_y = current->cell_y;
     while(current != NULL) {
-
         // if the head of the snake has no head (i.e. it's the only cell in the snake), move it in the forward direction
         if(current->head == NULL) {
             if(current->cell_x == 0 && snake->forwardDirection.x < 0) {
@@ -95,14 +97,19 @@ static void Update() {
 
             current->cell_x += snake->forwardDirection.x;
             current->cell_y += snake->forwardDirection.y;
-            current = current->tail;
         } else {
             // if the current cell has a head, move it to the position of the head
-            current->cell_x = current->head->cell_x;
-            current->cell_y = current->head->cell_y;
-            current = current->tail;
+            uint32_t temp_x = current->cell_x;
+            uint32_t temp_y = current->cell_y;
+            current->cell_x = prev_x;
+            current->cell_y = prev_y;
+            prev_x = temp_x;
+            prev_y = temp_y;
         }
+
+        current = current->tail;
     }
+
 }
 
 static void Draw() {
