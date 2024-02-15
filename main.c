@@ -130,40 +130,24 @@ static void Draw() {
 
 int main (int argc, char* argvp[]) {
 
-     // Initialization
-    //--------------------------------------------------------------------------------------
-
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Snake Game");
 
-    SetTargetFPS(10);               // Set our game to run at 60 frames-per-second
-    //--------------------------------------------------------------------------------------
+    SetTargetFPS(10);
 
     init();
 
     // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
+    while (!WindowShouldClose()) 
     {
-        // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //----------------------------------------------------------------------------------
         BeginDrawing();
                 HandleInput();
                 Update();    
                 Draw();
-                //print the snake's head position to console
                 printf("Snake head position: %d, %d\n", snake->head->cell_x, snake->head->cell_y);
         EndDrawing();
-        //----------------------------------------------------------------------------------
     }
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
+    CloseWindow();
 
     return 0;
 }
