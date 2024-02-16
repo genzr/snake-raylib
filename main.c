@@ -12,9 +12,10 @@
 
 static int board[HEIGHT_IN_CELLS][WIDTH_IN_CELLS];
 
+static uint8_t gameState = 0;
 static uint32_t score = 0;
 static uint8_t foodCount = 0;
-
+static uint8_t foodRate = 5;
 typedef struct SnakeCell SnakeCell;
 
 typedef struct SnakeCell {
@@ -54,6 +55,7 @@ static void init() {
 
     score = 0;
     foodCount = 0;
+    gameState = 0;
 
     // Initialise 2d array to store the game board
     for(int i = 0; i < HEIGHT_IN_CELLS; i++) {
@@ -113,6 +115,8 @@ static void HandleInput() {
         snake->forwardDirection = (Vector2){-1, 0};
     } else if(IsKeyPressed(KEY_RIGHT) && snake->forwardDirection.x != -1) {
         snake->forwardDirection = (Vector2){1, 0};
+    } else if(IsKeyPressed(KEY_R)) {
+        RestartGame();
     }
 }
 
@@ -167,7 +171,7 @@ static void Update() {
     if(board[snake->head->cell_y][snake->head->cell_x] == 1) {
         // Increase the score
         score++;
-        foodCount++;
+        foodCount+=foodRate;
 
         // Place new food
         PlaceFood(board);
@@ -177,7 +181,7 @@ static void Update() {
     current = snake->head->tail;
     while(current != NULL) {
         if(snake->head->cell_x == current->cell_x && snake->head->cell_y == current->cell_y) {
-            RestartGame();
+            gameState = 1;
             break;
         }
         current = current->tail;
@@ -218,12 +222,21 @@ int main (int argc, char* argvp[]) {
     {
         BeginDrawing();
                 HandleInput();
-                Update();    
+
+                if (gameState == 0) {
+                    Update();
+                }
+                    
                 Draw();
                 DrawText(TextFormat("Score: %d", score), 10, 10, 20, LIGHTGRAY);
-                printf("Snake head position: %d, %d\n", snake->head->cell_x, snake->head->cell_y);
-                printf("Snake length: %d\n", snake->length);
-                printf("Food count: %d\n", foodCount);
+
+                if(gameState == 1) {
+                    DrawText("Game Over!", 200, 200, 40, LIGHTGRAY);
+                    DrawText("Press R to restart", 200, 250, 20, LIGHTGRAY);
+                }
+                //printf("Snake head position: %d, %d\n", snake->head->cell_x, snake->head->cell_y);
+                //printf("Snake length: %d\n", snake->length);
+                //printf("Food count: %d\n", foodCount);
         EndDrawing();
     }
 
