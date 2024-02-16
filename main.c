@@ -3,14 +3,17 @@
 #include <stdlib.h>
 
 #define CELL_SIZE 20
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
 #define MAX_SNAKE_LENGTH 100
 #define WIDTH_IN_CELLS (SCREEN_WIDTH / CELL_SIZE)
 #define HEIGHT_IN_CELLS (SCREEN_HEIGHT / CELL_SIZE)
 #define INITIAL_SNAKE_LENGTH 3
 
-int board[HEIGHT_IN_CELLS][WIDTH_IN_CELLS];
+static int board[HEIGHT_IN_CELLS][WIDTH_IN_CELLS];
+
+static uint32_t score = 0;
+static uint8_t foodCount = 0;
 
 typedef struct SnakeCell SnakeCell;
 
@@ -23,13 +26,35 @@ typedef struct SnakeCell {
 
 typedef struct {
     SnakeCell* head;
+    SnakeCell* tail;
     uint32_t length;
     Vector2 forwardDirection;
 } Snake;
 
 static Snake* snake;
 
+
+static void PlaceFood(int board[HEIGHT_IN_CELLS][WIDTH_IN_CELLS]) {
+    // Clear the board of any food
+    for(int i = 0; i < HEIGHT_IN_CELLS; i++) {
+        for(int j = 0; j < WIDTH_IN_CELLS; j++) {
+            if(board[i][j] == 1) {
+                board[i][j] = 0;
+            }
+        }
+    }
+    
+    // Place food on the board
+    int x = GetRandomValue(0, WIDTH_IN_CELLS - 1);
+    int y = GetRandomValue(0, HEIGHT_IN_CELLS - 1);
+    board[y][x] = 1;
+}
+
 static void init() {
+
+    score = 0;
+    foodCount = 0;
+
     // Initialise 2d array to store the game board
     for(int i = 0; i < HEIGHT_IN_CELLS; i++) {
         for(int j = 0; j < WIDTH_IN_CELLS; j++) {
@@ -46,6 +71,7 @@ static void init() {
 
     snake = (Snake*)malloc(sizeof(Snake));
     snake->head = head;
+    snake->tail = head;
     snake->length = 1;
     snake->forwardDirection = (Vector2){1, 0};
 
@@ -61,6 +87,21 @@ static void init() {
         head = newCell;
         snake->length++;
     }
+
+    PlaceFood(board);
+}
+
+static void RestartGame() {
+
+    // free the snake from memory
+    SnakeCell* current = snake->head;
+    while(current != NULL) {
+        SnakeCell* temp = current;
+        current = current->tail;
+        free(temp);
+    }
+
+    init();
 }
 
 static void HandleInput() {
@@ -105,18 +146,54 @@ static void Update() {
             current->cell_y = prev_y;
             prev_x = temp_x;
             prev_y = temp_y;
+
+            //if we are at the tail of the snake, we want to grow by the amount of food we have eaten
+            if(current->tail == NULL & foodCount > 0) {
+                SnakeCell* newCell = (SnakeCell*)malloc(sizeof(SnakeCell));
+                newCell->cell_x = prev_x;
+                newCell->cell_y = prev_y;
+                newCell->tail = NULL;
+                newCell->head = current;
+                current->tail = newCell;
+                snake->length++;
+                foodCount--;
+            }
         }
 
         current = current->tail;
     }
 
+    //Check if snake head is on food
+    if(board[snake->head->cell_y][snake->head->cell_x] == 1) {
+        // Increase the score
+        score++;
+        foodCount++;
+
+        // Place new food
+        PlaceFood(board);
+    }
+
+    // Check if snake head is on snake body
+    current = snake->head->tail;
+    while(current != NULL) {
+        if(snake->head->cell_x == current->cell_x && snake->head->cell_y == current->cell_y) {
+            RestartGame();
+            break;
+        }
+        current = current->tail;
+    }
+    
 }
 
 static void Draw() {
     // Draw the game board
     for(int i = 0; i < HEIGHT_IN_CELLS; i++) {
         for(int j = 0; j < WIDTH_IN_CELLS; j++) {
-            DrawRectangle(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE, BLACK);
+            if(board[i][j] == 1) {
+                DrawRectangle(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE, RED);
+            } else {
+                DrawRectangle(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE, BLACK);
+            }
         }
     }
 
@@ -132,7 +209,7 @@ int main (int argc, char* argvp[]) {
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Snake Game");
 
-    SetTargetFPS(10);
+    SetTargetFPS(15);
 
     init();
 
@@ -143,7 +220,10 @@ int main (int argc, char* argvp[]) {
                 HandleInput();
                 Update();    
                 Draw();
+                DrawText(TextFormat("Score: %d", score), 10, 10, 20, LIGHTGRAY);
                 printf("Snake head position: %d, %d\n", snake->head->cell_x, snake->head->cell_y);
+                printf("Snake length: %d\n", snake->length);
+                printf("Food count: %d\n", foodCount);
         EndDrawing();
     }
 
